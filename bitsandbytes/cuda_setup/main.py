@@ -190,17 +190,23 @@ def extract_candidate_paths(paths_list_candidate: str) -> Set[Path]:
     return {Path(ld_path) for ld_path in paths_list_candidate.split(":") if ld_path}
 
 
+def path_exists(path: Path) -> bool:
+    try:
+        if os.stat(str(path)):
+            return True
+    except PermissionError as pex:
+        return False
+    except FileNotFoundError as fnfex:
+        return False
+    except OSError as exc:
+        if exc.errno != errno.ENAMETOOLONG:
+            raise exc
+
 def remove_non_existent_dirs(candidate_paths: Set[Path]) -> Set[Path]:
     existent_directories: Set[Path] = set()
     for path in candidate_paths:
-        try:
-            if path.exists():
-                existent_directories.add(path)
-        except OSError as exc:
-            if exc.errno != errno.ENAMETOOLONG:
-                raise exc
-        except PermissionError as pex:
-            pass
+        if path_exists(path):
+            existent_directories.add(path)
 
     non_existent_directories: Set[Path] = candidate_paths - existent_directories
     if non_existent_directories:
